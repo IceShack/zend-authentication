@@ -481,19 +481,15 @@ class Http implements AdapterInterface
             throw new Exception\RuntimeException('Unable to base64_decode Authorization header value');
         }
 
-        // See ZF-1253. Validate the credentials the same way the digest
-        // implementation does. If invalid credentials are detected,
-        // re-challenge the client.
-        if (!ctype_print($auth)) {
-            return $this->challengeClient();
-        }
+        $username = $this->request->getServer('PHP_AUTH_USER');
+        $password = $this->request->getServer('PHP_AUTH_PW');
+
         // Fix for ZF-1515: Now re-challenges on empty username or password
-        $creds = array_filter(explode(':', $auth));
-        if (count($creds) != 2) {
+        if (empty($username) || empty($password)) {
             return $this->challengeClient();
         }
 
-        $result = $this->basicResolver->resolve($creds[0], $this->realm, $creds[1]);
+        $result = $this->basicResolver->resolve($username, $this->realm, $password);
 
         if ($result instanceof Authentication\Result && $result->isValid()) {
             return $result;
